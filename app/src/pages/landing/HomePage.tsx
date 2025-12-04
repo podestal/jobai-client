@@ -1,10 +1,10 @@
-import React from 'react'
+import Hero from '../../components/landing/Hero'
 
 const HomePage = () => {
   return (
-    <>
-    <h2 className="text-3xl font-bold underline">Hello World</h2>
-    </>
+    <div>
+    <Hero />
+    </div>
   )
 }
 
