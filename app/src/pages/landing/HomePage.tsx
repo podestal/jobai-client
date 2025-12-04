@@ -1,9 +1,11 @@
 import Hero from '../../components/landing/Hero'
+import Header from '../../router/Header'
 
 const HomePage = () => {
   return (
     <div>
-    <Hero />
+      <Header />
+      <Hero />
     </div>
   )
 }
