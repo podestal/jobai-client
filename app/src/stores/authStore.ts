@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 
 interface AuthState {
   accessToken: string | null
@@ -7,38 +6,58 @@ interface AuthState {
   setTokens: (access: string, refresh: string) => void
   clearTokens: () => void
   isAuthenticated: boolean
+  isRefreshing: boolean
+  setIsRefreshing: (isRefreshing: boolean) => void
 }
 
-// Store access token in memory only (most secure)
-// Store refresh token in localStorage (practical compromise)
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
+// Store access token in memory only (most secure - lost on refresh)
+// Store refresh token in sessionStorage (more secure than localStorage, cleared on tab close)
+const REFRESH_TOKEN_KEY = 'jobai_refresh_token'
+
+export const useAuthStore = create<AuthState>()((set) => ({
+  accessToken: null,
+  refreshToken: (() => {
+    // Initialize from sessionStorage on store creation
+    try {
+      return sessionStorage.getItem(REFRESH_TOKEN_KEY)
+    } catch {
+      return null
+    }
+  })(),
+  isAuthenticated: false,
+  isRefreshing: false,
+  setIsRefreshing: (isRefreshing: boolean) => {
+    set({ isRefreshing })
+  },
+  setTokens: (access: string, refresh: string) => {
+    // Store refresh token in sessionStorage
+    try {
+      sessionStorage.setItem(REFRESH_TOKEN_KEY, refresh)
+    } catch (error) {
+      console.error('Failed to store refresh token:', error)
+    }
+    
+    set({
+      accessToken: access,
+      refreshToken: refresh,
+      isAuthenticated: true,
+      isRefreshing: false,
+    })
+  },
+  clearTokens: () => {
+    // Remove from sessionStorage
+    try {
+      sessionStorage.removeItem(REFRESH_TOKEN_KEY)
+    } catch (error) {
+      console.error('Failed to clear refresh token:', error)
+    }
+    
+    set({
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
-      setTokens: (access: string, refresh: string) => {
-        set({
-          accessToken: access,
-          refreshToken: refresh,
-          isAuthenticated: true,
-        })
-      },
-      clearTokens: () => {
-        set({
-          accessToken: null,
-          refreshToken: null,
-          isAuthenticated: false,
-        })
-      },
-    }),
-    {
-      name: 'auth-storage',
-      // Only persist refresh token, not access token
-      partialize: (state) => ({
-        refreshToken: state.refreshToken,
-      }),
-    }
-  )
-)
+      isRefreshing: false,
+    })
+  },
+}))
 
