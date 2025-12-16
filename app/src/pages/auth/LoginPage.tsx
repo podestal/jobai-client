@@ -1,28 +1,31 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
+import useLogin from '../../hooks/auth/useLogin'
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: '',
   })
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
-  const [isLoading, setIsLoading] = useState(false)
+  const [errors, setErrors] = useState<{ username?: string; password?: string }>({})
   const [showPassword, setShowPassword] = useState(false)
 
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(email)
-  }
+  const login = useLogin({
+    onError: () => {
+      // Handle login error
+      setErrors({
+        username: 'Credenciales incorrectas',
+        password: 'Por favor, verifica tu usuario y contraseña',
+      })
+    },
+  })
 
   const validateForm = (): boolean => {
-    const newErrors: { email?: string; password?: string } = {}
+    const newErrors: { username?: string; password?: string } = {}
 
-    if (!formData.email) {
-      newErrors.email = 'El email es obligatorio'
-    } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Por favor, introduce un email válido'
+    if (!formData.username.trim()) {
+      newErrors.username = 'El usuario es obligatorio'
     }
 
     if (!formData.password) {
@@ -42,40 +45,33 @@ const LoginPage = () => {
       return
     }
 
-    setIsLoading(true)
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    setIsLoading(false)
-    
-    // Handle successful login (you'll add this later)
-    console.log('Login successful', formData)
+    // Clear previous errors
+    setErrors({})
+
+    // Call login mutation
+    login.mutate({
+      email: formData.username, // API expects 'email' field
+      password: formData.password,
+    })
   }
 
   const handleGoogleLogin = async () => {
-    setIsLoading(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setIsLoading(false)
+    // TODO: Implement Google OAuth
     console.log('Google login initiated')
   }
 
   const handleFacebookLogin = async () => {
-    setIsLoading(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setIsLoading(false)
+    // TODO: Implement Facebook OAuth
     console.log('Facebook login initiated')
   }
 
   const handleInstagramLogin = async () => {
-    setIsLoading(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setIsLoading(false)
+    // TODO: Implement Instagram OAuth
     console.log('Instagram login initiated')
   }
 
   const handleTikTokLogin = async () => {
-    setIsLoading(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setIsLoading(false)
+    // TODO: Implement TikTok OAuth
     console.log('TikTok login initiated')
   }
 
@@ -136,7 +132,7 @@ const LoginPage = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleGoogleLogin}
-              disabled={isLoading}
+              disabled={login.isPending}
               className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-700 font-medium hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -165,7 +161,7 @@ const LoginPage = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleFacebookLogin}
-              disabled={isLoading}
+              disabled={login.isPending}
               className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-700 font-medium hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#1877F2">
@@ -179,7 +175,7 @@ const LoginPage = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleInstagramLogin}
-              disabled={isLoading}
+              disabled={login.isPending}
               className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-700 font-medium hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="url(#instagram-gradient-login)">
@@ -202,7 +198,7 @@ const LoginPage = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleTikTokLogin}
-              disabled={isLoading}
+              disabled={login.isPending}
               className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-700 font-medium hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#000000">
@@ -222,37 +218,37 @@ const LoginPage = () => {
             </div>
           </div>
 
-          {/* Email/Password Form */}
+          {/* Username/Password Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email Input */}
+            {/* Username Input */}
             <div>
               <label
-                htmlFor="email"
+                htmlFor="username"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Dirección de email
+                Usuario
               </label>
               <motion.input
                 whileFocus={{ scale: 1.01 }}
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
+                type="text"
+                id="username"
+                name="username"
+                value={formData.username}
                 onChange={handleChange}
                 className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 transition-all duration-200 ${
-                  errors.email
+                  errors.username
                     ? 'border-red-300 focus:border-red-500 focus:ring-red-200'
                     : 'border-gray-200 focus:border-blue-500 focus:ring-blue-200'
                 }`}
-                placeholder="tu@ejemplo.com"
+                placeholder="Tu usuario"
               />
-              {errors.email && (
+              {errors.username && (
                 <motion.p
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="mt-1 text-sm text-red-600"
                 >
-                  {errors.email}
+                  {errors.username}
                 </motion.p>
               )}
             </div>
@@ -323,10 +319,10 @@ const LoginPage = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               type="submit"
-              disabled={isLoading}
+              disabled={login.isPending}
               className="w-full bg-linear-to-r from-blue-500 to-indigo-600 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isLoading ? (
+              {login.isPending ? (
                 <>
                   <motion.div
                     animate={{ rotate: 360 }}
