@@ -31,6 +31,7 @@ const useLogin = (options?: UseLoginOptions) => {
     onError: (error: Error) => {
       // Call custom error handler if provided
       options?.onError?.(error)
+      console.error(error)
     },
   })
 }

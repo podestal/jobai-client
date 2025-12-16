@@ -4,6 +4,7 @@ import LoginPage from "../pages/auth/LoginPage";
 import Error404Page from "../pages/Error/Error404Page";
 import SignUpPage from "../pages/auth/SignUpPage";
 import OnboardingPage from "../pages/onboarding/OnboardingPage";
+import PrivateRoutes from "../components/auth/PrivateRoutes";
 
 const routes = createBrowserRouter([
     {
@@ -23,7 +24,11 @@ const routes = createBrowserRouter([
     },
     {
         path: "/onboarding",
-        element: <OnboardingPage />,
+        element: (
+            <PrivateRoutes>
+                <OnboardingPage />
+            </PrivateRoutes>
+        ),
         errorElement: <Error404Page />,
     },
 ])

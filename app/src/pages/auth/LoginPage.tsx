@@ -50,7 +50,7 @@ const LoginPage = () => {
 
     // Call login mutation
     login.mutate({
-      email: formData.username, // API expects 'email' field
+      username: formData.username, // API expects 'email' field
       password: formData.password,
     })
   }
