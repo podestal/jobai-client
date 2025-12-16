@@ -1,10 +1,15 @@
 import axios from "axios"
+import { setupAxiosInterceptors } from "../../utils/axiosInterceptors"
 
 const URL = import.meta.env.VITE_AUTH_URL;
 
-const axiosInstance = axios.create({
+// Create shared axios instance
+export const axiosInstance = axios.create({
     baseURL: URL, 
 });
+
+// Setup interceptors for automatic token refresh
+setupAxiosInterceptors(axiosInstance)
 
 class AuthClient<ResponseType, RequestType = ResponseType> {
     endpoint: string
