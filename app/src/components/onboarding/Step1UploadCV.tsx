@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import useCreateResume from '../../hooks/resume/useCreateResume'
 
 interface Step1UploadCVProps {
   onComplete: (data: any) => void
@@ -7,46 +8,47 @@ interface Step1UploadCVProps {
 
 const Step1UploadCV = ({ onComplete }: Step1UploadCVProps) => {
   const [isDragging, setIsDragging] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
-  const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const createResume = useCreateResume({
+    onSuccess: (data) => {
+      // Pass the resume data to the parent component
+      onComplete({
+        resumeId: data.id,
+        file: uploadedFile,
+        textExtracted: data.text_extracted,
+        resumeData: data
+      })
+    },
+    onError: (error) => {
+      setError('Error al subir el CV. Por favor, intenta nuevamente.')
+      console.error('Error uploading resume:', error)
+    },
+  })
 
   const handleFileSelect = async (file: File) => {
+    // Validate file type
+    if (!file.type.includes('pdf') && !file.name.endsWith('.docx')) {
+      setError('Por favor, sube un archivo PDF o DOCX')
+      return
+    }
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (file.size > maxSize) {
+      setError('El archivo es demasiado grande. Máximo 10MB')
+      return
+    }
+
     setUploadedFile(file)
-    setIsUploading(true)
+    setError(null)
     
-    // Simulate file upload and analysis
-    setTimeout(() => {
-      setDetectedLanguage('Español')
-      setIsUploading(false)
-      
-      // Simulate extracted data
-      const mockExtractedProfile = {
-        name: 'Juan Pérez',
-        experience: [
-          {
-            role: 'Desarrollador Full Stack',
-            company: 'Tech Corp',
-            dates: '2020 - Presente',
-            bullets: ['Desarrollo de aplicaciones web', 'Gestión de equipos']
-          }
-        ],
-        skills: ['React', 'Node.js', 'Python', 'PostgreSQL'],
-        education: [
-          {
-            degree: 'Ingeniería de Sistemas',
-            institution: 'Universidad Nacional',
-            year: '2018'
-          }
-        ],
-        yearsOfExperience: 5
-      }
-      
-      onComplete({
-        file,
-        extractedProfile: mockExtractedProfile
-      })
-    }, 2000)
+    // Submit the resume to the backend
+    createResume.mutate({
+      file,
+      text_extracted: '', // Backend will extract the text
+    })
   }
 
   const handleDrop = (e: React.DragEvent) => {
@@ -99,7 +101,7 @@ const Step1UploadCV = ({ onComplete }: Step1UploadCVProps) => {
           isDragging ? 'bg-blue-50' : 'bg-gray-50'
         }`}
       >
-        {isUploading ? (
+        {createResume.isPending ? (
           <div className="space-y-4">
             <motion.div
               animate={{ rotate: 360 }}
@@ -107,19 +109,17 @@ const Step1UploadCV = ({ onComplete }: Step1UploadCVProps) => {
               className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"
             />
             <p className="text-lg font-semibold text-gray-700">
-              Analizando CV...
+              Subiendo y analizando CV...
             </p>
-            {detectedLanguage && (
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-sm text-gray-500"
-              >
-                Idioma detectado: <span className="font-semibold">{detectedLanguage}</span>
-              </motion.p>
-            )}
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-sm text-gray-500"
+            >
+              Por favor espera mientras procesamos tu archivo
+            </motion.p>
           </div>
-        ) : uploadedFile ? (
+        ) : uploadedFile && createResume.isSuccess ? (
           <div className="space-y-4">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
               <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,6 +131,32 @@ const Step1UploadCV = ({ onComplete }: Step1UploadCVProps) => {
               <p className="text-sm text-gray-500 mt-1">
                 {(uploadedFile.size / 1024).toFixed(2)} KB
               </p>
+              <p className="text-sm text-green-600 mt-2 font-medium">
+                ✓ CV subido exitosamente
+              </p>
+            </div>
+          </div>
+        ) : uploadedFile && createResume.isError ? (
+          <div className="space-y-4">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-lg font-semibold text-gray-900">{uploadedFile.name}</p>
+              <p className="text-sm text-red-600 mt-2">
+                Error al subir el archivo
+              </p>
+              <button
+                onClick={() => {
+                  setUploadedFile(null)
+                  setError(null)
+                }}
+                className="mt-4 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 underline"
+              >
+                Intentar con otro archivo
+              </button>
             </div>
           </div>
         ) : (
@@ -165,8 +191,24 @@ const Step1UploadCV = ({ onComplete }: Step1UploadCVProps) => {
         )}
       </motion.div>
 
+      {/* Error Message */}
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg"
+        >
+          <div className="flex items-center gap-2 text-red-700">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm font-medium">{error}</p>
+          </div>
+        </motion.div>
+      )}
+
       {/* Language Detection Info */}
-      {!isUploading && !uploadedFile && (
+      {!createResume.isPending && !uploadedFile && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
